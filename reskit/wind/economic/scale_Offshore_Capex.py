@@ -75,6 +75,7 @@ def distanceToCoastline(latitude, longitude, path=None):
         path = DEFAULT_PATHS.get("distancetoCoast")
         if path is None:
             raise ValueError("No distaneFilePath is given. Please add it to default_path.yaml.")
+        
     try:
         value = gk.raster.interpolateValues(path, (longitude, latitude))
 
