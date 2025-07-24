@@ -13,3 +13,8 @@ Due to the current approaches used in solar PV and CSP calculation, the time shi
 # change for wind variables
 RESKit expects ready-to-use wind speed, so we need to calculate wind speed based on its components u and v that are downloaded from the host website.
 
+# example processing script: variable_preparation.sh
+see the corresponding script variable_preparation.sh for detials of post-processing ERA5 data. FYI, knowledge about Linux tool/command CDO is necessary for executing and understanding this script.
+
+In the near future, we may consider wrapping these command via a python interface using python package - python-cdo.
+
