@@ -29,6 +29,15 @@ def CSP_PTR_ERA5(
     fullvariation=False,
     _validation=False,
 ):
+    """This function is the overall workflow for the csp simulation and calls all subfunctions.
+    It is a wrapper around the function "CSP_PTR_ERA5_specific_dataset" below, to include the case of multiple datasets.
+    Multiple datasets are refering to multiple heat transfer fluids and therefore also different power plants. In that case, for each placement the optimal HTF is selected.
+
+    Args: 
+    global_solar_atlas_tamb_path (str): path to temperature data from global solar atlas. Used for selecting at which placement which HTF is optimal.
+    rest: see CSP_PTR_ERA5_specific_dataset
+
+    """
     # handle inputs for datasets
     single_dataset = False
     if datasets == None:
@@ -71,7 +80,7 @@ def CSP_PTR_ERA5(
         return output
 
     else:  # multiple datasets found
-        # 1) split up placements for each htf
+        # 1) split up placements for each htf (e.g. solar salt or heliosol)
         d = dataset_handler(datasets)
         placements = d.split_placements(
             placements=placements,
@@ -149,6 +158,46 @@ def CSP_PTR_ERA5_specific_dataset(
         Author: David Franzmann IEK -3
 
     Args:
+        placements (dataframe):
+                     The locations that the simulation should be run for.
+                     Columns must include: longitude, latitude of the exact placement. As well as area which can be one of the following: "area_m2", "area", "aperture_area_m2", "land_area_m2"
+        era5_path (str or rk.weather.NCSource): The source to read weather variables from. Needs multiple columns in case of NCSource correpsonding: "direct_horizontal_irradiance", "surface_wind_speed", "surface_air_temperature"
+        global_solar_atlas_dni_path (str, float, np.array): 
+            -str: path to DNI data from global solar atlas. If a string is given, it is expected to be a path to a raster file which can be
+              used to look up the average values from using the coordinates in `.placements`
+            - If a numpy ndarray (or derivative) is given, the shape must be one of (time, placements)
+              or at least (placements)
+        datasetname (str, optional): Describes the CSP technology dataset. Defaults to "Validation 10". Could also be "Helisol" for example. See csp/data/CSP_database.xlsx
+        elev_path (str, list):
+              If a string is given it must be a path to a rasterfile including the elevations.
+              If a list is given it has to include the elevations at each location.
+        output_netcdf_path (str, optional)
+            If given, the XArray dataset will be written to disc at the specified path
+            - By default None
+        output_variables (List[str]) optional
+            If given, specifies the variables which should be included in the resulting
+            dataset. Otherwise all suitable variables found in `.placements`, `.workflow_parameters`,
+            `.sim_data`, and `.time_index` will be included
+            - Only variables of numeric or string type are suitable due to NetCDF4 limitations
+            - By default None
+        
+        output_netcdf_path (_type_, optional): _description_. Defaults to None.
+        output_variables (_type_, optional): _description_. Defaults to None.
+        return_self (bool, optional): _description_. Defaults to True.
+        JITaccelerate (bool, optional): _description_. Defaults to False.
+        verbose (bool, optional): _description_. Defaults to False.
+        debug_vars (bool, optional): _description_. Defaults to False.
+        onlynightuse (bool, optional): _description_. Defaults to True.
+        fullvariation (bool, optional): _description_. Defaults to False.
+        _validation (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        _type_: _description_
+    """
+
+    """
+
+    Args:
         placements ([type]): [description]
         era5_path ([type]): [description]
         output_netcdf_path ([type], optional): [description]. Defaults to None.
@@ -159,11 +208,13 @@ def CSP_PTR_ERA5_specific_dataset(
         [type]: [description]
     """
 
-    # 1) Load input data
-    wf = PTRWorkflowManager(placements)
+  
 
-    ptr_data = wf.loadPTRdata(datasetname=datasetname)
-    wf.determine_area()
+    # 1) Load input data
+    wf = PTRWorkflowManager(placements) 
+
+    ptr_data = wf.loadPTRdata(datasetname=datasetname) #PTRdata referes to the different csp models, i.e. helisol or solar salt: csp/data/CSP_database.xlsx
+    wf.determine_area() #either determines aperture_area from land_area, or the other way around
 
     # 3) read in Input data
     if verbose:
@@ -203,7 +254,7 @@ def CSP_PTR_ERA5_specific_dataset(
     wf.get_timesteps()
 
     # apply elevation
-    wf.apply_elevation(elev_path)
+    wf.apply_eapply_azimuthlevation(elev_path)
     wf.apply_azimuth()
     # 5) calculate the solar position based on pvlib
 
@@ -217,7 +268,8 @@ def CSP_PTR_ERA5_specific_dataset(
     # do long run averaging for DNI
     # TODO: remove
     if global_solar_atlas_dni_path == "default_cluster":
-        global_solar_atlas_dni_path = r"/storage/internal/data/gears/geography/irradiance/global_solar_atlas_v2.5/World_DNI_GISdata_LTAy_AvgDailyTotals_GlobalSolarAtlas-v2_GEOTIFF/DNI.tif"
+        global_solar_atlas_dni_path = r"/fast/central/shared_data/2023_gears/geography/irradiance/global_solar_atlas_v2.5/World_DNI_GISdata_LTAy_AvgDailyTotals_GlobalSolarAtlas-v2_GEOTIFF/DNI.tif"
+
 
     if _validation:
         # when doing the valitadion, the dni atlas was not finally processed,
@@ -237,7 +289,7 @@ def CSP_PTR_ERA5_specific_dataset(
     # manipulationof input values for variation calculation
     wf._applyVariation()  # only for developers, can be ignored otherwise
 
-    # 6) doing selfmade calulations until Heat to HTF
+    # 6) doing selfmade calulations until Heat to HTF (Heat transfer fluid)
     wf.calculateIAM(a1=ptr_data["a1"], a2=ptr_data["a2"], a3=ptr_data["a3"])
     wf.calculateShadowLosses(
         method="wagner2011", SF_density=ptr_data["SF_density_direct"]

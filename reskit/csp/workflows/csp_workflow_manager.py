@@ -475,7 +475,7 @@ class PTRWorkflowManager(SolarWorkflowManager):
         return self
 
     def calculateIAM(self, a1: float = 0.000884, a2: float = 0.00005369, a3: float = 0):
-        """Calculates the IAM angle modifier from incidence angle. Formula and default values are from:
+        """Calculates the IAM (Incident Angle Modifier) angle modifier from incidence angle. Formula and default values are from:
         [1]	GAFUROV, Tokhir, Julio USAOLA, and Milan PRODANOVIC. Modelling of concentrating
         solar power plant for power system reliability studies [online]. IET Renewable Power
         Generation. 2015, 9(2), 120-130. Available from: 10.1049/iet-rpg.2013.0377.
