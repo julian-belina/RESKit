@@ -90,10 +90,10 @@ def distanceToCoastline(latitude, longitude, path=None):
 def calculateOffshoreCapex(
     baseCapex,
     capacity,
+    rotorDiam,
     hubHeight,
     waterDepth,
     coastDistance,
-    rotorDiam,
     techYear=2050,
     shareTurb=0.449,
     shareFound=0.204,
@@ -117,14 +117,14 @@ def calculateOffshoreCapex(
         Reference CAPEX per kW (cost unit/kW) that should be scaled. base CApex must be given in €/kW to enable correct scaling.
     capacity : float
         Turbine rated capacity in kW.
+    rotorDiam : float
+        Rotor diameter in meters.
     hubHeight : float
         Hub height in meters.
     waterDepth : float
         Site-specific water depth in meters.
     coastDistance : float
         Distance from site to nearest coast in kilometers.
-    rotorDiam : float
-        Rotor diameter in meters.
     techYear : int, optional
         Year of the applied technology, by default 2050.
     shareTurb : float, optional
