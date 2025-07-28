@@ -7,6 +7,26 @@ import numpy as np
 import pandas as pd
 from .power_curve import compute_specific_power
 from reskit.parameters.parameters import OnshoreParameters, OffshoreParams
+import warnings
+
+def onshore_turbine_from_avg_wind_speed(**kwargs):
+    """
+    Convenience function for backward compatibility, will be removed soon.
+    All kwargs are passed to turbine_design_from_avg_wind_speed() with 
+    technology='onshore'.
+    """
+    # deprecation warning
+    warnings.warn(
+        "onshore_turbine_from_avg_wind_speed() will be retired soon, please use turbine_design_from_avg_wind_speed() instead.",
+        DeprecationWarning,
+        stacklevel=2
+        )
+    # check or set technology arg as onshore
+    assert not "technology" in kwargs or kwargs["technology"] == "onshore",\
+        f"'technology' argument not required here, but must be 'onshore' if provided."
+    kwargs["technology"] = "onshore"
+    # return results of turbine_design_from_avg_wind_speed
+    return turbine_design_from_avg_wind_speed(**kwargs)
 
 
 def turbine_design_from_avg_wind_speed(
