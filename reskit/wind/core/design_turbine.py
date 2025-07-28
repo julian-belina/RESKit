@@ -6,7 +6,7 @@
 import numpy as np
 import pandas as pd
 from .power_curve import compute_specific_power
-from reskit.parameters.parameters import OnshoreParameters, OffshoreParams
+from reskit.parameters.parameters import OnshoreParameters, OffshoreParameters
 import warnings
 
 
