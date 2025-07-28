@@ -9,21 +9,23 @@ from .power_curve import compute_specific_power
 from reskit.parameters.parameters import OnshoreParameters, OffshoreParams
 import warnings
 
+
 def onshore_turbine_from_avg_wind_speed(**kwargs):
     """
     Convenience function for backward compatibility, will be removed soon.
-    All kwargs are passed to turbine_design_from_avg_wind_speed() with 
+    All kwargs are passed to turbine_design_from_avg_wind_speed() with
     technology='onshore'.
     """
     # deprecation warning
     warnings.warn(
         "onshore_turbine_from_avg_wind_speed() will be retired soon, please use turbine_design_from_avg_wind_speed() instead.",
         DeprecationWarning,
-        stacklevel=2
-        )
+        stacklevel=2,
+    )
     # check or set technology arg as onshore
-    assert not "technology" in kwargs or kwargs["technology"] == "onshore",\
-        f"'technology' argument not required here, but must be 'onshore' if provided."
+    assert (
+        not "technology" in kwargs or kwargs["technology"] == "onshore"
+    ), f"'technology' argument not required here, but must be 'onshore' if provided."
     kwargs["technology"] = "onshore"
     # return results of turbine_design_from_avg_wind_speed
     return turbine_design_from_avg_wind_speed(**kwargs)
@@ -42,7 +44,7 @@ def turbine_design_from_avg_wind_speed(
     max_hub_height=None,
     tech_year=2050,
     baseline_turbine_fp=None,
-    convention="RybergEtAl2019"
+    convention="RybergEtAl2019",
 ):
     """
     Suggest onshore turbine design characteristics (capacity, hub height, rotor diameter, specific power) for a 2050 European context based on an average wind speed value.
@@ -89,8 +91,8 @@ def turbine_design_from_avg_wind_speed(
         replace the default data.
 
     convention : str, optional
-        Author and year of the publication that contains the exact scaling 
-        approach of hub height and specific power over wind speed. Available 
+        Author and year of the publication that contains the exact scaling
+        approach of hub height and specific power over wind speed. Available
         conventions (depending on the technology) might be:
         - RybergEtAl2019 : Approach from [1]
         - WinklerEtAl2026 : unpublished, coming soon
@@ -109,25 +111,31 @@ def turbine_design_from_avg_wind_speed(
     [1] David S. Ryberg, Dilara C. Caglayan, Sabrina Schmitt, Jochen Linssen, Detlef Stolten, Martin Robinius - The Future of European Onshore Wind Energy Potential:
     Detailed Distributionand Simulation of Advanced Turbine Designs, Energy, 2019, available at https://www.sciencedirect.com/science/article/abs/pii/S0360544219311818
     """
-        # define scaling functions
+    # define scaling functions
     func_mapper = {
-        "onshore" : {
-            "RybergEtAl2019" : {
-                "specific_power"    : lambda ws : np.exp(0.53769024 * np.log(ws) + 4.74917728),
-                "hub_height"        : lambda ws : np.exp(-0.84976623 * np.log(ws) + 6.1879937),
-                },
-            "WinklerEtAl2026" : {
-                "specific_power"    : lambda ws : 125.13600383540069 * np.log(ws) + 106.57341843646547,
-                "hub_height"        : lambda ws : -64.7318283532891 * np.log(ws) + 235.1434881620268, 
-                },
+        "onshore": {
+            "RybergEtAl2019": {
+                "specific_power": lambda ws: np.exp(
+                    0.53769024 * np.log(ws) + 4.74917728
+                ),
+                "hub_height": lambda ws: np.exp(-0.84976623 * np.log(ws) + 6.1879937),
             },
-        "offshore" : {
-            "WinklerEtAl2026" : {
-                "specific_power"    : lambda ws : 83.6341781611228 * np.log(ws) + 185.03686061455767,
-                "hub_height"        : lambda ws : -49.50488649246549 * np.log(ws) + 205.99055705890416,
-                },
+            "WinklerEtAl2026": {
+                "specific_power": lambda ws: 125.13600383540069 * np.log(ws)
+                + 106.57341843646547,
+                "hub_height": lambda ws: -64.7318283532891 * np.log(ws)
+                + 235.1434881620268,
             },
-        }
+        },
+        "offshore": {
+            "WinklerEtAl2026": {
+                "specific_power": lambda ws: 83.6341781611228 * np.log(ws)
+                + 185.03686061455767,
+                "hub_height": lambda ws: -49.50488649246549 * np.log(ws)
+                + 205.99055705890416,
+            },
+        },
+    }
     # first extract the technology subdict or raise error for unknown techs
     try:
         # extract the sub dicts for the available conventions for the given tech
@@ -140,16 +148,20 @@ def turbine_design_from_avg_wind_speed(
         scaling_funcs = conv_mapper[convention]
     except:
         # no matching convention found
-        raise ValueError(f"convention for technology '{technology}' must be in: {', '.join(scaling_func_mapper.keys())}")
-    
+        raise ValueError(
+            f"convention for technology '{technology}' must be in: {', '.join(scaling_func_mapper.keys())}"
+        )
+
     # get the correct params
     if technology == "onshore":
         Params = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
     elif technology == "offshore":
         Params = OffshoreParams(fp=baseline_turbine_fp, year=tech_year)
     else:
-        raise ValueError(f"parameters for technology '{technology}' cannot be initialized.")
-    
+        raise ValueError(
+            f"parameters for technology '{technology}' cannot be initialized."
+        )
+
     # define a dict to hold the parameter values
     baseline_params = dict()
 
@@ -169,7 +181,7 @@ def turbine_design_from_avg_wind_speed(
 
     wind_speed = np.array(wind_speed)
     multi = wind_speed.size > 1
-    
+
     # Design Specific Power
     scaling = compute_specific_power(
         baseline_params["base_capacity"], baseline_params["base_rotor_diam"]
