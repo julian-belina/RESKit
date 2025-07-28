@@ -6,11 +6,12 @@
 import numpy as np
 import pandas as pd
 from .power_curve import compute_specific_power
-from reskit.parameters.parameters import OnshoreParameters
+from reskit.parameters.parameters import OnshoreParameters, OffshoreParams
 
 
-def onshore_turbine_from_avg_wind_speed(
+def turbine_design_from_avg_wind_speed(
     wind_speed,
+    technology,
     constant_rotor_diam=None,
     base_capacity=None,
     base_hub_height=None,
@@ -21,6 +22,7 @@ def onshore_turbine_from_avg_wind_speed(
     max_hub_height=None,
     tech_year=2050,
     baseline_turbine_fp=None,
+    convention="RybergEtAl2019"
 ):
     """
     Suggest onshore turbine design characteristics (capacity, hub height, rotor diameter, specific power) for a 2050 European context based on an average wind speed value.
@@ -30,6 +32,9 @@ def onshore_turbine_from_avg_wind_speed(
     ----------
     wind_speed : numeric or array_like
         Local average wind speed close to or at the hub height.
+
+    technology : str
+        Either "onshore" or "offshore" to define the turbine scaling functions.
 
     constant_rotor_diam : bool, optional
         Whether the rotor diameter is mantained constant or not, by default True
@@ -63,6 +68,13 @@ def onshore_turbine_from_avg_wind_speed(
         A json or csv file that contains baseline turbine parameters. Will
         replace the default data.
 
+    convention : str, optional
+        Author and year of the publication that contains the exact scaling 
+        approach of hub height and specific power over wind speed. Available 
+        conventions (depending on the technology) might be:
+        - RybergEtAl2019 : Approach from [1]
+        - WinklerEtAl2026 : unpublished, coming soon
+
     Returns
     -------
     dict or pandas DataFrame
@@ -77,37 +89,73 @@ def onshore_turbine_from_avg_wind_speed(
     [1] David S. Ryberg, Dilara C. Caglayan, Sabrina Schmitt, Jochen Linssen, Detlef Stolten, Martin Robinius - The Future of European Onshore Wind Energy Potential:
     Detailed Distributionand Simulation of Advanced Turbine Designs, Energy, 2019, available at https://www.sciencedirect.com/science/article/abs/pii/S0360544219311818
     """
-    OnshoreParams = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
-
+        # define scaling functions
+    func_mapper = {
+        "onshore" : {
+            "RybergEtAl2019" : {
+                "specific_power"    : lambda ws : np.exp(0.53769024 * np.log(ws) + 4.74917728),
+                "hub_height"        : lambda ws : np.exp(-0.84976623 * np.log(ws) + 6.1879937),
+                },
+            "WinklerEtAl2026" : {
+                "specific_power"    : lambda ws : 125.13600383540069 * np.log(ws) + 106.57341843646547,
+                "hub_height"        : lambda ws : -64.7318283532891 * np.log(ws) + 235.1434881620268, 
+                },
+            },
+        "offshore" : {
+            "WinklerEtAl2026" : {
+                "specific_power"    : lambda ws : 83.6341781611228 * np.log(ws) + 185.03686061455767,
+                "hub_height"        : lambda ws : -49.50488649246549 * np.log(ws) + 205.99055705890416,
+                },
+            },
+        }
+    # first extract the technology subdict or raise error for unknown techs
+    try:
+        # extract the sub dicts for the available conventions for the given tech
+        conv_mapper = func_mapper[technology]
+    except:
+        raise KeyError(f"'technology' must be in: {', '.join(func_mapper.keys())}")
+    # then extract the correct scaling functions for the given convention or flag error
+    try:
+        # extract the scaling functions for the given convention as dict of functions
+        scaling_funcs = conv_mapper[convention]
+    except:
+        # no matching convention found
+        raise ValueError(f"convention for technology '{technology}' must be in: {', '.join(scaling_func_mapper.keys())}")
+    
+    # get the correct params
+    if technology == "onshore":
+        Params = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
+    elif technology == "offshore":
+        Params = OffshoreParams(fp=baseline_turbine_fp, year=tech_year)
+    else:
+        raise ValueError(f"parameters for technology '{technology}' cannot be initialized.")
+    
     # define a dict to hold the parameter values
     baseline_params = dict()
 
-    # iterate over arguments and retrieve defaults from OnshoreParams if not given explicitly
+    # iterate over arguments and retrieve defaults from Params if not given explicitly
     for arg, val in locals().items():
         if arg in [
             "wind_speed",
             "baseline_turbine_fp",
-            "OnshoreParams",
+            "Params",
             "baseline_params",
         ]:
             continue
         print(arg, val)
         if val is None:
-            val = getattr(OnshoreParams, arg)
+            val = getattr(Params, arg)
         baseline_params[arg] = val
 
     wind_speed = np.array(wind_speed)
     multi = wind_speed.size > 1
-
+    
     # Design Specific Power
     scaling = compute_specific_power(
         baseline_params["base_capacity"], baseline_params["base_rotor_diam"]
-    ) / (
-        np.exp(
-            0.53769024 * np.log(baseline_params["reference_wind_speed"]) + 4.74917728
-        )
-    )
-    specific_power = scaling * np.exp(0.53769024 * np.log(wind_speed) + 4.74917728)
+    ) / scaling_funcs["specific_power"](ws=baseline_params["reference_wind_speed"])
+
+    specific_power = scaling * scaling_funcs["specific_power"](ws=wind_speed)
     if multi:
         lt180 = specific_power < baseline_params["min_specific_power"]
         if lt180.any():
@@ -125,11 +173,9 @@ def onshore_turbine_from_avg_wind_speed(
 
     # Design Hub Height
     scaling = baseline_params["base_hub_height"] / (
-        np.exp(
-            -0.84976623 * np.log(baseline_params["reference_wind_speed"]) + 6.1879937
-        )
+        scaling_funcs["hub_height"](ws=baseline_params["reference_wind_speed"])
     )
-    hub_height = scaling * np.exp(-0.84976623 * np.log(wind_speed) + 6.1879937)
+    hub_height = scaling * scaling_funcs["hub_height"](ws=wind_speed)
     if multi:
         lowerlt = hub_height < (rotor_diam / 2 + baseline_params["min_tip_height"])
         if lowerlt.any():
