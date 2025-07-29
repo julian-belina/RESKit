@@ -37,7 +37,6 @@ jobs:
             "windows-latest",
             "windows-2022",
           ]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
