@@ -156,7 +156,7 @@ def turbine_design_from_avg_wind_speed(
     if technology == "onshore":
         Params = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
     elif technology == "offshore":
-        Params = OffshoreParams(fp=baseline_turbine_fp, year=tech_year)
+        Params = OffshoreParameters(fp=baseline_turbine_fp, year=tech_year)
     else:
         raise ValueError(
             f"parameters for technology '{technology}' cannot be initialized."
