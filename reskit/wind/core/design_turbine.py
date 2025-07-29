@@ -149,7 +149,7 @@ def turbine_design_from_avg_wind_speed(
     except:
         # no matching convention found
         raise ValueError(
-            f"convention for technology '{technology}' must be in: {', '.join(scaling_func_mapper.keys())}"
+            f"convention for technology '{technology}' must be in: {', '.join(conv_mapper.keys())}"
         )
 
     # get the correct params
