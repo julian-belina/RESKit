@@ -152,18 +152,9 @@ def turbine_design_from_avg_wind_speed(
             f"convention for technology '{technology}' must be in: {', '.join(conv_mapper.keys())}"
         )
 
-    # get the correct params
-    if technology == "onshore":
-        Params = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
-    elif technology == "offshore":
-        Params = OffshoreParameters(fp=baseline_turbine_fp, year=tech_year)
-    else:
-        raise ValueError(
-            f"parameters for technology '{technology}' cannot be initialized."
-        )
-
     # define a dict to hold the parameter values
     baseline_params = dict()
+    Params = None # initialize with None, overwrite with singleton later if needed
 
     # iterate over arguments and retrieve defaults from Params if not given explicitly
     for arg, val in locals().items():
@@ -174,9 +165,20 @@ def turbine_design_from_avg_wind_speed(
             "baseline_params",
         ]:
             continue
-        print(arg, val)
         if val is None:
+            if Params is None:
+                # get the correct params singleton when it is needed for the 1st time
+                if technology == "onshore":
+                    Params = OnshoreParameters(fp=baseline_turbine_fp, year=tech_year)
+                elif technology == "offshore":
+                    Params = OffshoreParameters(fp=baseline_turbine_fp, year=tech_year)
+                else:
+                    raise ValueError(
+                        f"Parameters singleton cannot be initialized for technology '{technology}'."
+                    )
+            # set value from Params
             val = getattr(Params, arg)
+            print(f"Parameter '{arg}' taken from Params as: {val}", flush=True)
         baseline_params[arg] = val
 
     wind_speed = np.array(wind_speed)
