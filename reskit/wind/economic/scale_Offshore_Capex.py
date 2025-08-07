@@ -44,7 +44,7 @@ def waterDepthFromLocation(
 
 
     depthFiles = glob.glob(os.path.join(waterDepthFolderPath, "*.tif"))
-    resultDepth = gk.raster.interpolateValues(source=[depthFiles],points=(longitude,latitude))
+    resultDepth = gk.raster.interpolateValues(source=depthFiles,points=(longitude,latitude))
 
     return abs(resultDepth) if resultDepth is not None else None
 
