@@ -760,11 +760,14 @@ def _split_locs(placements, groups):
     else:
         locs = gk.LocationSet(placements.index)
         for loc_group in locs.splitKMeans(groups=groups):
+            # splitKMeans() returns a LocationSet with coordinates very close to placements.index,
+            # but not guaranteed to be exact due to floating-point precision.
+            # Therefore, its rounded to 15 decimal to ensure an exact match for use in .loc[].
             rounded_keys = [
                 (round(loc.lon, 15), round(loc.lat, 15)) for loc in loc_group[:]
             ]
             yield placements.loc[rounded_keys]
-            # yield placements.loc[loc_group[:]]
+
 
 def distribute_workflow(
     workflow_function: FunctionType,
@@ -838,8 +841,10 @@ def distribute_workflow(
         locs = gk.LocationSet(
             np.column_stack([placements.lon.values, placements.lat.values])
         )
-
-    placements.index = placements.index = [
+    # placements.index is used in the _split_locs function, where exact key matching is required.
+    # Therefore, the coordinates are rounded to 15 decimal places to ensure consistency with the
+    # LocationSet keys returned by splitKMeans().
+    placements.index = [
         (round(loc.lon, 15), round(loc.lat, 15)) for loc in locs._locations
     ]
     placements["location_id"] = np.arange(placements.shape[0])
