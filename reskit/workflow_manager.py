@@ -562,6 +562,7 @@ class WorkflowManager:
         self,
         output_netcdf_path: str = None,
         output_variables: List[str] = None,
+        custom_attributes: dict = None,
         _intermediate_dict=False,
     ) -> xarray.Dataset:
         """Generates an XArray dataset from the data currently contained in the WorkflowManager
@@ -583,6 +584,11 @@ class WorkflowManager:
             dataset. Otherwise all suitable variables found in `.placements`, `.workflow_parameters`,
             `.sim_data`, and `.time_index` will be included
             - Only variables of numeric or string type are suitable due to NetCDF4 limitations
+            - By default None
+
+        custom_attributes : dict, optional
+            If given, adds the key-value pairs as attributes to the XArray dataset
+            - These will be added in addition to the workflow_parameters
             - By default None
 
         Returns
@@ -682,6 +688,11 @@ class WorkflowManager:
         for k, v in self.workflow_parameters.items():
             xds.attrs[k] = v
 
+        # Add custom attributes if provided
+        if custom_attributes is not None:
+            for k, v in custom_attributes.items():
+                xds.attrs[k] = v
+
         if output_netcdf_path is not None:
             xds.to_netcdf(output_netcdf_path, encoding=encoding)
             return output_netcdf_path
@@ -693,6 +704,7 @@ class WorkflowManager:
         xds: xarray.Dataset,
         output_netcdf_path: str = None,
         output_variables: List[str] = None,
+        custom_attributes: dict = None,
         _intermediate_dict=False,
     ) -> str:
         """Saves an XArray dataset to netCDF4 format
@@ -705,6 +717,9 @@ class WorkflowManager:
 
         Parameters
         ----------
+        xds : xarray.Dataset
+            The XArray dataset to save
+
         output_netcdf_path : str
             If given, the XArray dataset will be written to disc at the specified path
             - By default None
@@ -714,6 +729,11 @@ class WorkflowManager:
             dataset. Otherwise all suitable variables found in `.placements`, `.workflow_parameters`,
             `.sim_data`, and `.time_index` will be included
             - Only variables of numeric or string type are suitable due to NetCDF4 limitations
+            - By default None
+
+        custom_attributes : dict, optional
+            If given, adds the key-value pairs as attributes to the XArray dataset before saving
+            - These will be added in addition to existing attributes
             - By default None
 
         Returns
@@ -740,6 +760,11 @@ class WorkflowManager:
         #             if key not in output_variables:
         #                 continue
         #         encoding[key] = dict(zlib=True)
+
+        # Add custom attributes if provided
+        if custom_attributes is not None:
+            for k, v in custom_attributes.items():
+                xds.attrs[k] = v
 
         if output_netcdf_path is not None:
             xds.to_netcdf(output_netcdf_path, encoding=encoding)

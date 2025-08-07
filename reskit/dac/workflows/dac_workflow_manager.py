@@ -43,6 +43,19 @@ class DACWorkflowManager(WorkflowManager):
         # Do basic workflow construction
         assert all([a in placements.columns for a in ["lon","lat","capacity"]]), f"Placements must contain the columns lon,lat and capacity"
         super().__init__(placements)
+        
+        units = {
+            "capacity": "t_CO2/h",
+            "capacity_factor": "-",
+            "conversion_factor_electricity" : "MWh_el/t_CO2",
+            "conversion_factor_heat" : "MWh_heat/t_CO2",
+            "conversion_factor_water": "t_H2O/t_CO2",
+            "CO2_output": "t_CO2",
+            "H2O_output": "t_H2O",
+            "electricity_input": "MWh_el",
+            "heat_input": "MWh_heat",
+        }
+        self.units = OrderedDict(units)
 
 
 

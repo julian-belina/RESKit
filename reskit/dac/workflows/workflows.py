@@ -46,8 +46,9 @@ def lt_dac_era5_wenzel2025(placements, era5_path, output_netcdf_path = None, out
     wf.load_lt_dac_model_data(model)
     wf.simulate_lt_dac_model()
 
+
     return wf.to_xarray(
-                output_netcdf_path=output_netcdf_path, output_variables=output_variables
+                output_netcdf_path=output_netcdf_path, output_variables=output_variables, custom_attributes=wf.units,
             )
 
 def ht_dac_era5_wenzel2025(placements, era5_path, output_netcdf_path = None, output_variables=None, model="HT_okosun"):
@@ -80,5 +81,6 @@ def ht_dac_era5_wenzel2025(placements, era5_path, output_netcdf_path = None, out
     wf.simulate_ht_dac_model(model)
 
     return wf.to_xarray(
-                output_netcdf_path=output_netcdf_path, output_variables=output_variables
+                output_netcdf_path=output_netcdf_path, output_variables=output_variables,
+                custom_attributes=wf.units,
             )
