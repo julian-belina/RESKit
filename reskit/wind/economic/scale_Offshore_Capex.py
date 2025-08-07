@@ -282,7 +282,7 @@ def getRatedCostFromWaterDepth(depth, maxMonopileDepth=25, maxJacketDepth=55):
 
 
 # %%
-def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
+def getCableCost(distance, capacity, variableCostFactor=1.350, fixedCost=0):
     """
     Calculates the cost for connecting an offshore wind power plant to the coastline.
 
@@ -293,7 +293,7 @@ def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
     capacity : float
         Power plant's capacity in kW.
     variableCostFactor : float, optional
-        Cost multiplier in €/kW/km, by default 1 350.
+        Cost multiplier in €/kW/km, by default 1.350
     fixedCost : float, optional
         Fixed connection cost in the respective currency unit. Defaults to 0 [€]
 
