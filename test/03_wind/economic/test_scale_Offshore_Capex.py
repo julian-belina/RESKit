@@ -1,5 +1,6 @@
 from reskit.wind.economic.scale_Offshore_Capex import *
 import numpy as np
+import pytest
 from reskit.default_paths import DEFAULT_PATHS
 from reskit.parameters.parameters import OffshoreParameters
 
@@ -62,3 +63,37 @@ def test_getCableCost():
 
     assert short < long, "equaiton is wrong in cable cost calculations"
     assert small < large, "equaiton is wrong in cable cost calculations"
+
+def test_getConverterStationCost():
+    # test onshore AC substation
+    c1 = getConverterStationCost(
+        capacity=10000,
+        waterDepth=None,  # onshore
+        voltageType="ac",
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",
+    )
+
+    assert c1 == 231875.0
+
+    # test offshore DC substation
+    c2 = getConverterStationCost(
+        capacity=10000,
+        waterDepth=55,  # jacket depth
+        voltageType="dc",
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",
+    )
+
+    assert c2 == 1713505.0
+
+    # TEST MUST-FAIL CASES
+
+    with pytest.raises(Exception):
+        getConverterStationCost(
+            capacity=10000,
+            waterDepth=55,  # jacket depth
+            voltageType="does_not_exist",  # must fail
+            maxJacketDepth=55,
+            convention="RogeauEtAl2023",
+        )
