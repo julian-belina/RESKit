@@ -395,6 +395,60 @@ def getFoundationCost(
         raise NotImplementedError(f"convention '{convention}' is not implemented.")
 
     
+def getConverterStationCost(
+        capacity, 
+        waterDepth, 
+        voltageType="dc", 
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",
+    ):
+    """
+    Calculates the cost of an onshore or offshore converter station for AC or DC
+    connections of wind farms. 
+
+    capacity : int
+        Converter station power in [kW].
+    waterDepth : int
+        The water depth in case of an offshore substation, does then include the
+        platform cost of either jacket or floating type depending on depth. If 
+        None, an onshore substation without platform will be assumed. 
+    voltageType : str, optional
+        If the substation is for "ac"or "dc" connections, by default "dc".
+    maxJacketDepth : int, optional
+        The max. possible jacket foundation depth in [m]. By default 55 m
+        following [1].
+    convention : str, optional
+        The convention by which the foundation cost shall be determined,
+        e.g. "RogeauEtAl2023" based on the equations in [1].
+        
+    [1] Rogeau, Antoine; Vieubled, Julien; Coatpont, Matthieu de; Affonso 
+    Nobrega, Pedro; Erbs, Guillaume; Girard, Robin (2023): Techno-economic 
+    evaluation and resource assessment of hydrogen production through 
+    offshore wind farms: A European perspective. In Renewable and 
+    Sustainable Energy Reviews 187, p. 113699. DOI: 10.1016/j.rser.2023.113699.
+    """
+    if convention == "RogeauEtAl2023":
+        # calculate electrical powerstation cost based on equation (10) and table 6
+        RCPS = {"ac" : 22.87, "dc" : 102.93} # EUR/kW
+        UCPS = {"ac" : 3.1750000, "dc" : 7.060000} # EUR
+        ECPS = RCPS[voltageType] * capacity + UCPS[voltageType] * 10**3
+
+        if waterDepth is None:
+            # an onshore station, no additional platform cost
+            ECPF = 0
+        else:
+            # get platform cost from separate function
+            ECPF = getFoundationCost(
+                capacity=capacity, 
+                applicationType=voltageType, 
+                waterDepth=waterDepth, 
+                foundationType=None, 
+                maxJacketDepth=maxJacketDepth, 
+                convention=convention,
+            )
+
+    return ECPS + ECPF
+    
 
 def onshoreTcc(cp, hh, rd, gdpEscalator=None, bladeMaterialEscalator=None, blades=None):
     """
