@@ -5,6 +5,7 @@ import pickle
 import glob
 import numpy as np
 import geokit as gk
+import warnings
 
 
 from reskit.default_paths import DEFAULT_PATHS
@@ -40,11 +41,14 @@ def waterDepthFromLocation(
     if waterDepthFolderPath is None:
         waterDepthFolderPath = DEFAULT_PATHS.get("waterdepthFile")
         if waterDepthFolderPath is None:
-            raise ValueError("No waterDepthFilePath is given. Please add it to default_path.yaml.")
-
+            raise ValueError(
+                "No waterDepthFilePath is given. Please add it to default_path.yaml."
+            )
 
     depthFiles = glob.glob(os.path.join(waterDepthFolderPath, "*.tif"))
-    resultDepth = gk.raster.interpolateValues(source=[depthFiles],points=(longitude,latitude))
+    resultDepth = gk.raster.interpolateValues(
+        source=depthFiles, points=(longitude, latitude)
+    )
 
     return abs(resultDepth) if resultDepth is not None else None
 
@@ -74,8 +78,10 @@ def distanceToCoastline(latitude, longitude, path=None):
     if path is None:
         path = DEFAULT_PATHS.get("distancetoCoast")
         if path is None:
-            raise ValueError("No distaneFilePath is given. Please add it to default_path.yaml.")
-        
+            raise ValueError(
+                "No distaneFilePath is given. Please add it to default_path.yaml."
+            )
+
     try:
         value = gk.raster.interpolateValues(path, (longitude, latitude))
 
@@ -103,6 +109,7 @@ def calculateOffshoreCapex(
     maxJacketDepth=55,
     baseDepth=17,
     baseDistCoast=27,
+    baseWFSize=106858,
     baseCap=None,
     baseHubHeight=None,
     baseRotorDiam=None,
@@ -143,6 +150,8 @@ def calculateOffshoreCapex(
         Reference depth in CAPEX literature, by default 17.
     baseDistCoast : float, optional
         Reference coast distance, by default 27.
+    baseWFSize : int, optional
+        The average wind farm size in kW, by default 106858.
     baseCap : float, optional
         Reference turbine capacity. Loaded from CSV if not provided.
     baseHubHeight : float, optional
@@ -194,7 +203,6 @@ def calculateOffshoreCapex(
         baseCapex = params.base_capex_per_capacity
         print("inputCapex is taken from overall techno-economic file")
 
-
     turbineCostBase = baseCapex * shareTurb
     foundCostBase = baseCapex * shareFound
     cableCostBase = baseCapex * shareCable
@@ -231,8 +239,25 @@ def calculateOffshoreCapex(
     newFoundationCost = foundCostBase * costRatioFoundation
 
     # Scale cable cost
-    cableRatio = getCableCost(coastDistance, capacity) / getCableCost(
-        baseDistCoast, baseCap
+    convertercost_onshore = (
+        getConverterStationCost(
+            cp=baseWFSize, waterDepth=None, voltageType="dc", maxJacketDepth=55
+        )
+        * capacity
+        / baseWFSize
+    )
+    convertercost_offshore = (
+        getConverterStationCost(
+            cp=baseWFSize, waterDepth=waterDepth, voltageType="dc", maxJacketDepth=55
+        )
+        * capacity
+        / baseWFSize
+    )
+    convertercost_total = convertercost_onshore + convertercost_offshore
+    cableRatio = getCableCost(
+        distance=coastDistance, capacity=capacity, fixedCost=convertercost_total
+    ) / getCableCost(
+        distance=baseDistCoast, capacity=baseCap, fixedCost=convertercost_total
     )
     newCableCost = cableCostBase * cableRatio
 
@@ -242,8 +267,6 @@ def calculateOffshoreCapex(
     )
 
     return totalOffshoreCapex
-
-
 
 
 # %%
@@ -282,7 +305,7 @@ def getRatedCostFromWaterDepth(depth, maxMonopileDepth=25, maxJacketDepth=55):
 
 
 # %%
-def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
+def getCableCost(distance, capacity, variableCostFactor=1.350, fixedCost=0):
     """
     Calculates the cost for connecting an offshore wind power plant to the coastline.
 
@@ -293,7 +316,7 @@ def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
     capacity : float
         Power plant's capacity in kW.
     variableCostFactor : float, optional
-        Cost multiplier in €/kW/km, by default 1 350.
+        Cost multiplier in €/kW/km, by default 1.350
     fixedCost : float, optional
         Fixed connection cost in the respective currency unit. Defaults to 0 [€]
 
@@ -307,17 +330,172 @@ def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
     Rogeau et al. (2023), "Review and modeling of offshore wind CAPEX",
     Renewable and Sustainable Energy Reviews, DOI: 10.1016/j.rser.2023.113699
     """
-    assert distance > 0, "distance must be larger tan 0"
+    assert distance >= 0, "distance must be larger or equal to 0"
     assert capacity > 0, " turbine capacity must be larger than 0"
     assert variableCostFactor > 0, "cost factor must be larger tan 0"
     assert fixedCost >= 0, "fixed Cost must be postive or 0"
-
-    
 
     variableCost = variableCostFactor * distance * capacity
     cableCost = fixedCost + variableCost
 
     return cableCost
+
+
+def getPlatformCost(
+    capacity,
+    applicationType,
+    waterDepth,
+    foundationType=None,
+    maxJacketDepth=55,
+    convention="RogeauEtAl2023",
+):
+    """
+    Returns the cost of an offshore foundation for offshore substations or
+    electrolysis depending on application type, water depth and installed
+    capacity.
+
+    capacity : int, float
+        The installed capacity in [kW] for the respective application.
+    applicationType : str
+        The type of application that shall be installed on the platform,
+        e.g. "ac" (substation), "dc" (substation) or (offshore) "electrolysis".
+    waterDepth : int
+        The location water depth in [m].
+    maxJacketDepth : int, optional
+        The max. possible jacket foundation depth in [m]. By default 55 m
+        following [1].
+    convention : str, optional
+        The convention by which the foundation cost shall be determined,
+        e.g. "RogeauEtAl2023" based on the equations in [1].
+
+    [1] Rogeau, Antoine; Vieubled, Julien; Coatpont, Matthieu de; Affonso
+    Nobrega, Pedro; Erbs, Guillaume; Girard, Robin (2023): Techno-economic
+    evaluation and resource assessment of hydrogen production through
+    offshore wind farms: A European perspective. In Renewable and
+    Sustainable Energy Reviews 187, p. 113699. DOI: 10.1016/j.rser.2023.113699.
+    """
+    assert (
+        isinstance(waterDepth, (int, float)) and waterDepth > 0
+    ), f"waterDepth must be an int or float > 0 m"
+    if convention == "RogeauEtAl2023":
+        # platform cost factors per type, see table (5)
+        RCPF_factors = {
+            "jacket": {"c2": 233, "c3": 47},
+            "floating": {"c2": 87, "c3": 68},
+        }
+        UCPF_factors = {
+            "jacket": {"c2": 309, "c3": 62},
+            "floating": {"c2": 116, "c3": 91},
+        }
+        assert sorted(RCPF_factors.keys()) == sorted(UCPF_factors.keys())  # make sure
+
+        # relative theoretical power based on power densities/footprints, eq.(9)
+        powerDensity_factors = {
+            "dc": capacity / 1000,
+            "ac": 0.5 * capacity / 1000,
+            "electrolysis": 2 * capacity / 1000,
+        }
+
+        # get and check foundation type
+        if foundationType is None:
+            foundationType = "jacket" if waterDepth <= maxJacketDepth else "floating"
+        elif not all(
+            [foundationType in _dict for _dict in [RCPF_factors, UCPF_factors]]
+        ):
+            raise ValueError(
+                f"foundationType must be in: {', '.join(RCPF_factors.keys())}"
+            )
+        elif waterDepth > maxJacketDepth and foundationType == "jacket":
+            warnings.warn(
+                f"waterDepth ({waterDepth} m) exceeds maxJacketDepth ({maxJacketDepth} m) but 'jacket' is enforced as foundationType."
+            )
+
+        # check voltage type
+        if not all([applicationType in _dict for _dict in [powerDensity_factors]]):
+            raise ValueError(
+                f"applicationType must be in: {', '.join(powerDensity_factors.keys())}"
+            )
+
+        # get RCPF and UCPF for equation () as per equation ()
+        RCPF = (
+            RCPF_factors[foundationType]["c2"] * waterDepth
+            + RCPF_factors[foundationType]["c3"] * 10**3
+        )
+        UCPF = (
+            UCPF_factors[foundationType]["c2"] * waterDepth
+            + UCPF_factors[foundationType]["c3"] * 10**3
+        )
+
+        # eq.(9) get relative theoretical power, based on power densities/footprints, see [1]
+        P_wf_ = powerDensity_factors[applicationType]
+
+        # calculate final platform cost as the sum of capacity-dependent and fixed cost as per eq. (8)
+        ECPF = RCPF * P_wf_ + UCPF
+
+        return ECPF
+    else:
+        raise NotImplementedError(f"convention '{convention}' is not implemented.")
+
+
+def getConverterStationCost(
+    capacity,
+    waterDepth,
+    voltageType="dc",
+    maxJacketDepth=55,
+    convention="RogeauEtAl2023",
+):
+    """
+    Calculates the cost of an onshore or offshore converter station for AC or DC
+    connections of wind farms.
+
+    capacity : int
+        Converter station power in [kW].
+    waterDepth : int
+        The water depth in case of an offshore substation, does then include the
+        platform cost of either jacket or floating type depending on depth. If
+        None, an onshore substation without platform will be assumed.
+    voltageType : str, optional
+        If the substation is for "ac"or "dc" connections, by default "dc".
+    maxJacketDepth : int, optional
+        The max. possible jacket foundation depth in [m]. By default 55 m
+        following [1].
+    convention : str, optional
+        The convention by which the foundation cost shall be determined,
+        e.g. "RogeauEtAl2023" based on the equations in [1].
+
+    [1] Rogeau, Antoine; Vieubled, Julien; Coatpont, Matthieu de; Affonso
+    Nobrega, Pedro; Erbs, Guillaume; Girard, Robin (2023): Techno-economic
+    evaluation and resource assessment of hydrogen production through
+    offshore wind farms: A European perspective. In Renewable and
+    Sustainable Energy Reviews 187, p. 113699. DOI: 10.1016/j.rser.2023.113699.
+    """
+    if convention == "RogeauEtAl2023":
+        # calculate electrical powerstation cost based on equation (10) and table 6
+        RCPS = {"ac": 22.87, "dc": 102.93}  # EUR/kW
+        UCPS = {"ac": 3.1750000, "dc": 7.060000}  # EUR
+        assert sorted(RCPS.keys()) == sorted(UCPS.keys())  # make sure
+        if not voltageType in RCPS:
+            raise ValueError(
+                f"unknown voltageType, select from: {', '.join(RCPS.keys())}"
+            )
+
+        ECPS = RCPS[voltageType] * capacity + UCPS[voltageType] * 10**3
+
+        if waterDepth is None:
+            # an onshore station, no additional platform cost
+            ECPF = 0
+        else:
+            # get platform cost from separate function
+            ECPF = getPlatformCost(
+                capacity=capacity,
+                applicationType=voltageType,
+                waterDepth=waterDepth,
+                foundationType=None,
+                maxJacketDepth=maxJacketDepth,
+                convention=convention,
+            )
+
+    return ECPS + ECPF
 
 
 def onshoreTcc(cp, hh, rd, gdpEscalator=None, bladeMaterialEscalator=None, blades=None):
