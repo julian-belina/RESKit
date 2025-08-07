@@ -104,6 +104,7 @@ def calculateOffshoreCapex(
     maxJacketDepth=55,
     baseDepth=17,
     baseDistCoast=27,
+    baseWFSize=106858,
     baseCap=None,
     baseHubHeight=None,
     baseRotorDiam=None,
@@ -144,6 +145,8 @@ def calculateOffshoreCapex(
         Reference depth in CAPEX literature, by default 17.
     baseDistCoast : float, optional
         Reference coast distance, by default 27.
+    baseWFSize : int, optional
+        The average wind farm size in kW, by default 106858.
     baseCap : float, optional
         Reference turbine capacity. Loaded from CSV if not provided.
     baseHubHeight : float, optional
@@ -232,8 +235,25 @@ def calculateOffshoreCapex(
     newFoundationCost = foundCostBase * costRatioFoundation
 
     # Scale cable cost
-    cableRatio = getCableCost(coastDistance, capacity) / getCableCost(
-        baseDistCoast, baseCap
+    convertercost_onshore = (
+        getConverterStationCost(
+            cp=baseWFSize, waterDepth=None, voltageType="dc", maxJacketDepth=55
+        )
+        * capacity
+        / baseWFSize
+    )
+    convertercost_offshore = (
+        getConverterStationCost(
+            cp=baseWFSize, waterDepth=waterDepth, voltageType="dc", maxJacketDepth=55
+        )
+        * capacity
+        / baseWFSize
+    )
+    convertercost_total = convertercost_onshore + convertercost_offshore
+    cableRatio = getCableCost(
+        distance=coastDistance, capacity=capacity, fixedCost=convertercost_total
+    ) / getCableCost(
+        distance=baseDistCoast, capacity=baseCap, fixedCost=convertercost_total
     )
     newCableCost = cableCostBase * cableRatio
 
