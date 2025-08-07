@@ -6,7 +6,7 @@ dependencies:
   - pip
   - matplotlib
   - descartes
-  - pandas<2.0.0
+  - pandas<2.2.3
   - openpyxl
   - numpy
   - numba

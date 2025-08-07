@@ -1020,6 +1020,9 @@ class NCSource(object):
                 "Interpolation scheme not one of: 'near', 'cubic', or 'bilinear'"
             )
 
+        # Create a list of strings from coordinates in the format "(lon, lat)" for all Location objects in a LocationSet.
+        locations = [f"({loc.lon}, {loc.lat})" for loc in locations._locations]
+
         # Make output as Series objects
         if force_as_data_frame or (len(output.shape) > 1 and output.shape[1] > 1):
             return pd.DataFrame(output, index=self.time_index, columns=locations)
@@ -1027,4 +1030,4 @@ class NCSource(object):
             try:
                 return pd.Series(output[:, 0], index=self.time_index, name=locations[0])
             except:
-                return pd.Series(output, index=self.time_index, name=locations[0])
+                return pd.Series(output[:, 0], index=self.time_index, name=locations[0])
