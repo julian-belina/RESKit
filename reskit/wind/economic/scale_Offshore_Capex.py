@@ -450,6 +450,12 @@ def getConverterStationCost(
         # calculate electrical powerstation cost based on equation (10) and table 6
         RCPS = {"ac" : 22.87, "dc" : 102.93} # EUR/kW
         UCPS = {"ac" : 3.1750000, "dc" : 7.060000} # EUR
+        assert sorted(RCPS.keys()) == sorted(UCPS.keys())  # make sure
+        if not voltageType in RCPS:
+            raise ValueError(
+                f"unknown voltageType, select from: {', '.join(RCPS.keys())}"
+            )
+
         ECPS = RCPS[voltageType] * capacity + UCPS[voltageType] * 10**3
 
         if waterDepth is None:
