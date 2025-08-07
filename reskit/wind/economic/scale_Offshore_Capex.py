@@ -5,6 +5,7 @@ import pickle
 import glob
 import numpy as np
 import geokit as gk
+import warnings
 
 
 from reskit.default_paths import DEFAULT_PATHS
@@ -319,6 +320,81 @@ def getCableCost(distance, capacity, variableCostFactor=1.350, fixedCost=0):
 
     return cableCost
 
+
+def getFoundationCost(
+        capacity, 
+        applicationType, 
+        waterDepth, 
+        foundationType=None, 
+        maxJacketDepth=55, 
+        convention="RogeauEtAl2023"
+    ):
+    """
+    Returns the cost of an offshore foundation for offshore wind turbines, 
+    electrolysis or substations depending on application type, water depth
+    and installed capacity. 
+
+    capacity : int, float
+        The installed capacity in [kW] for the respective application.
+    applicationType : str
+        The type of application that shall be installed on the platform, 
+        e.g. (wind) "turbine", "ac" (substation), "dc" (substation) or 
+        (offshore) "electrolysis".  
+    waterDepth : int
+        The location water depth in [m].
+    maxJacketDepth : int, optional
+        The max. possible jacket foundation depth in [m]. By default 55 m
+        following [1].
+    convention : str, optional
+        The convention by which the foundation cost shall be determined,
+        e.g. "RogeauEtAl2023" based on the equations in [1].
+        
+    [1] Rogeau, Antoine; Vieubled, Julien; Coatpont, Matthieu de; Affonso 
+    Nobrega, Pedro; Erbs, Guillaume; Girard, Robin (2023): Techno-economic 
+    evaluation and resource assessment of hydrogen production through 
+    offshore wind farms: A European perspective. In Renewable and 
+    Sustainable Energy Reviews 187, p. 113699. DOI: 10.1016/j.rser.2023.113699.
+    """
+    if convention == "RogeauEtAl2023":
+        # platform cost factors per type, see table (5)
+        RCPF_factors = {"jacket" : {"c2" : 233, "c3" : 47}, "floating" : {"c2" : 87, "c3" : 68}}
+        UCPF_factors = {"jacket" : {"c2" : 309, "c3" : 62}, "floating" : {"c2" : 116, "c3" : 91}}
+        assert sorted(RCPF_factors.keys())==sorted(UCPF_factors.keys()) # make sure
+
+        # relative theoretical power based on power densities/footprints, eq.(9)
+        powerDensity_factors = {
+            "dc" : capacity/1000 , 
+            "ac" : 0.5*capacity/1000, 
+            "electrolysis" : 2*capacity/1000
+        }
+
+        # get and check foundation type
+        if foundationType is None:
+            foundationType = "jacket" if waterDepth <= maxJacketDepth else "floating"
+        elif not all([foundationType in _dict for _dict in [RCPF_factors, UCPF_factors]]):
+            raise ValueError(f"foundationType must be in: {', '.join(RCPF_factors.keys())}")
+        elif waterDepth > maxJacketDepth and foundationType == "jacket":
+            warnings.warn(f"waterDepth ({waterDepth} m) exceeds maxJacketDepth ({maxJacketDepth} m) but 'jacket' is enforced as foundationType.")
+        
+        # check voltage type
+        if not all([applicationType in _dict for _dict in [powerDensity_factors]]):
+            raise ValueError(f"applicationType must be in: {', '.join(powerDensity_factors.keys())}")
+
+        # get RCPF and UCPF for equation () as per equation ()
+        RCPF = RCPF_factors[foundationType]["c2"]*waterDepth + RCPF_factors[foundationType]["c3"]*10**3 
+        UCPF = UCPF_factors[foundationType]["c2"]*waterDepth + UCPF_factors[foundationType]["c3"]*10**3
+
+        # eq.(9) get relative theoretical power, based on power densities/footprints, see [1]
+        P_wf_ = powerDensity_factors[applicationType]
+
+        # calculate final platform cost as the sum of capacity-dependent and fixed cost as per eq. (8)
+        ECPF = RCPF * P_wf_ + UCPF
+
+        return ECPF
+    else:
+        raise NotImplementedError(f"convention '{convention}' is not implemented.")
+
+    
 
 def onshoreTcc(cp, hh, rd, gdpEscalator=None, bladeMaterialEscalator=None, blades=None):
     """
