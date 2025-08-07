@@ -38,9 +38,9 @@ class DACWorkflowManager(WorkflowManager):
         """
 
         # Do basic workflow construction
-        assert all([a in placements.columns for a in ["lon", "lat", "capacity"]]), (
-            "Placements must contain the columns lon,lat and capacity"
-        )
+        assert all(
+            [a in placements.columns for a in ["lon", "lat", "capacity"]]
+        ), "Placements must contain the columns lon,lat and capacity"
         super().__init__(placements)
 
         units = {

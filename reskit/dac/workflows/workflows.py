@@ -30,9 +30,10 @@ def lt_dac_era5_wenzel2025(
             default: "nearest"
 
     """
-    assert model in ["LT_jajjawi", "LT_sendi"], (
-        f"Invalid model: {model}. You can chose between 'LT_jajjawi' or 'LT_sendi'"
-    )
+    assert model in [
+        "LT_jajjawi",
+        "LT_sendi",
+    ], f"Invalid model: {model}. You can chose between 'LT_jajjawi' or 'LT_sendi'"
 
     wf = DACWorkflowManager(placements)
 
