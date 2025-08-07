@@ -307,7 +307,7 @@ def getCableCost(distance, capacity, variableCostFactor=1350, fixedCost=0):
     Rogeau et al. (2023), "Review and modeling of offshore wind CAPEX",
     Renewable and Sustainable Energy Reviews, DOI: 10.1016/j.rser.2023.113699
     """
-    assert distance > 0, "distance must be larger tan 0"
+    assert distance >= 0, "distance must be larger or equal to 0"
     assert capacity > 0, " turbine capacity must be larger than 0"
     assert variableCostFactor > 0, "cost factor must be larger tan 0"
     assert fixedCost >= 0, "fixed Cost must be postive or 0"
