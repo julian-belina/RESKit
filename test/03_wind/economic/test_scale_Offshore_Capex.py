@@ -64,6 +64,71 @@ def test_getCableCost():
     assert short < long, "equaiton is wrong in cable cost calculations"
     assert small < large, "equaiton is wrong in cable cost calculations"
 
+
+def test_getFoundationCost():
+
+    c1 = getFoundationCost(
+        capacity=10000,
+        applicationType="ac",  # AC substation offshore
+        waterDepth=56,  # floating water depth
+        foundationType=None,  # no given foundation
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",  # Rogeau et al
+    )
+    assert c1 == 461856.0
+
+    c2 = getFoundationCost(
+        capacity=10000,
+        applicationType="dc",  # DC substation offshore
+        waterDepth=56,  # floating water depth
+        foundationType="jacket",  # jacket given but too deep -> warning, no error
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",  # Rogeau et al
+    )
+    assert c2 == 679784.0
+
+    c3 = getFoundationCost(
+        capacity=10000,
+        applicationType="electrolysis",  # central offshore electrolysis
+        waterDepth=55,  # jacket water depth
+        foundationType="floating",  # jacket would have been possibel, too, but floating allowed
+        maxJacketDepth=55,
+        convention="RogeauEtAl2023",  # Rogeau et al
+    )
+    assert c3 == 1553080.0
+
+    # TEST MUST-FAIL CASES
+    with pytest.raises(Exception):
+        getFoundationCost(
+            capacity=10000,
+            applicationType="does_not_exist",  # must fail
+            waterDepth=55,
+            foundationType=None,
+            maxJacketDepth=55,
+            convention="RogeauEtAl2023",
+        )
+
+    with pytest.raises(Exception):
+        getFoundationCost(
+            capacity=10000,
+            applicationType="AC",
+            waterDepth=50,
+            foundationType="does_not_exist",  # must fail
+            maxJacketDepth=55,
+            convention="RogeauEtAl2023",
+        )
+
+    with pytest.raises(Exception):
+        getFoundationCost(
+            capacity=10000,
+            applicationType="AC",
+            waterDepth=-1,  # must fail
+            foundationType=None,
+            maxJacketDepth=55,
+            convention="RogeauEtAl2023",
+        )
+
+
 def test_getConverterStationCost():
     # test onshore AC substation
     c1 = getConverterStationCost(
