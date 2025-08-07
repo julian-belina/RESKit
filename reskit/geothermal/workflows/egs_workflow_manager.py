@@ -799,7 +799,7 @@ class EGS_workflowmanager:
                 ]
 
                 # get eligible Values
-                argminOptDepthEligible = argminOptDepth[~notEligible].astype(np.int)
+                argminOptDepthEligible = argminOptDepth[~notEligible].astype(int)
                 varEligible = var[:, ~notEligible]
                 valEligible = getOptimalValue(self, varEligible, argminOptDepthEligible)
 
