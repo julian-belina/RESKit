@@ -341,7 +341,7 @@ def getCableCost(distance, capacity, variableCostFactor=1.350, fixedCost=0):
     return cableCost
 
 
-def getFoundationCost(
+def getPlatformCost(
         capacity, 
         applicationType, 
         waterDepth, 
@@ -350,16 +350,15 @@ def getFoundationCost(
         convention="RogeauEtAl2023"
     ):
     """
-    Returns the cost of an offshore foundation for offshore wind turbines, 
-    electrolysis or substations depending on application type, water depth
-    and installed capacity. 
+    Returns the cost of an offshore foundation for offshore substations or
+    electrolysis depending on application type, water depth and installed
+    capacity.
 
     capacity : int, float
         The installed capacity in [kW] for the respective application.
     applicationType : str
-        The type of application that shall be installed on the platform, 
-        e.g. (wind) "turbine", "ac" (substation), "dc" (substation) or 
-        (offshore) "electrolysis".  
+        The type of application that shall be installed on the platform,
+        e.g. "ac" (substation), "dc" (substation) or (offshore) "electrolysis".
     waterDepth : int
         The location water depth in [m].
     maxJacketDepth : int, optional
@@ -458,7 +457,7 @@ def getConverterStationCost(
             ECPF = 0
         else:
             # get platform cost from separate function
-            ECPF = getFoundationCost(
+            ECPF = getPlatformCost(
                 capacity=capacity, 
                 applicationType=voltageType, 
                 waterDepth=waterDepth, 

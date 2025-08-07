@@ -65,9 +65,9 @@ def test_getCableCost():
     assert small < large, "equaiton is wrong in cable cost calculations"
 
 
-def test_getFoundationCost():
+def test_getPlatformCost():
 
-    c1 = getFoundationCost(
+    c1 = getPlatformCost(
         capacity=10000,
         applicationType="ac",  # AC substation offshore
         waterDepth=56,  # floating water depth
@@ -77,7 +77,7 @@ def test_getFoundationCost():
     )
     assert c1 == 461856.0
 
-    c2 = getFoundationCost(
+    c2 = getPlatformCost(
         capacity=10000,
         applicationType="dc",  # DC substation offshore
         waterDepth=56,  # floating water depth
@@ -87,7 +87,7 @@ def test_getFoundationCost():
     )
     assert c2 == 679784.0
 
-    c3 = getFoundationCost(
+    c3 = getPlatformCost(
         capacity=10000,
         applicationType="electrolysis",  # central offshore electrolysis
         waterDepth=55,  # jacket water depth
@@ -99,7 +99,7 @@ def test_getFoundationCost():
 
     # TEST MUST-FAIL CASES
     with pytest.raises(Exception):
-        getFoundationCost(
+        getPlatformCost(
             capacity=10000,
             applicationType="does_not_exist",  # must fail
             waterDepth=55,
@@ -109,7 +109,7 @@ def test_getFoundationCost():
         )
 
     with pytest.raises(Exception):
-        getFoundationCost(
+        getPlatformCost(
             capacity=10000,
             applicationType="AC",
             waterDepth=50,
@@ -119,7 +119,7 @@ def test_getFoundationCost():
         )
 
     with pytest.raises(Exception):
-        getFoundationCost(
+        getPlatformCost(
             capacity=10000,
             applicationType="AC",
             waterDepth=-1,  # must fail
