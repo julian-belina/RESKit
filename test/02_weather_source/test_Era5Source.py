@@ -337,5 +337,3 @@ def test_Era5Source_get(pt_Era5Source, pt_BoundedEra5Source):
     pt = (6.03, 50.81)
     s1 = pt_Era5Source.get(var, pt, interpolation="bilinear")
     assert np.isclose(s1.values.mean(), 15.277533860286267)
-
-
