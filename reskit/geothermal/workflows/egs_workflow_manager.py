@@ -752,8 +752,8 @@ class EGS_workflowmanager:
         argminDepth = np.argmin(LCOE_considerable, axis=0)
         optDepths = self.depths[argminDepth]
         # correct by notEligible
-        argminDepth = argminDepth.astype(np.float)
-        optDepths = optDepths.astype(np.float)
+        argminDepth = argminDepth.astype(float)
+        optDepths = optDepths.astype(float)
         argminDepth[notEligible] = np.nan
         optDepths[notEligible] = np.nan
 
@@ -799,7 +799,7 @@ class EGS_workflowmanager:
                 ]
 
                 # get eligible Values
-                argminOptDepthEligible = argminOptDepth[~notEligible].astype(np.int)
+                argminOptDepthEligible = argminOptDepth[~notEligible].astype(int)
                 varEligible = var[:, ~notEligible]
                 valEligible = getOptimalValue(self, varEligible, argminOptDepthEligible)
 
