@@ -241,14 +241,14 @@ def calculateOffshoreCapex(
     # Scale cable cost
     convertercost_onshore = (
         getConverterStationCost(
-            cp=baseWFSize, waterDepth=None, voltageType="dc", maxJacketDepth=55
+            capacity=baseWFSize, waterDepth=None, voltageType="dc", maxJacketDepth=55
         )
         * capacity
         / baseWFSize
     )
     convertercost_offshore = (
         getConverterStationCost(
-            cp=baseWFSize, waterDepth=waterDepth, voltageType="dc", maxJacketDepth=55
+            capacity=baseWFSize, waterDepth=waterDepth, voltageType="dc", maxJacketDepth=55
         )
         * capacity
         / baseWFSize
