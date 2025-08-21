@@ -45,23 +45,23 @@ def get_pkg_file(name: str) -> Path:
 
 
 def test_calculateOffshoreCapex():
-    comparedCAPEX = 2943.80819956
+    comparedCAPEX = 2945.176
     calculatedCAPEX = calculateOffshoreCapex(
-        inputCapex=3000,
+        baseCapex=3000,
         capacity=14000,
         hubHeight=150,
         waterDepth=25,
         coastDistance=25,
         rotorDiam=230,
-        techYear=2050,
+        techYear=None,
         shareTurb=0.449,
         shareFound=0.204,
         shareCable=0.181,
         shareOverhead=0.166,
         maxMonopileDepth=25,
         maxJacketDepth=55,
-        litValueAvgDepth=17,
-        litValueAvgDistCoast=27,
+        baseDepth=17,
+        baseDistCoast=27,
         baseCap=13000,
         baseHubHeight=150,
         baseRotorDiam=250,
