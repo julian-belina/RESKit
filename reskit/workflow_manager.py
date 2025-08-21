@@ -343,8 +343,11 @@ class WorkflowManager:
             # execute with warnings filter since values outside of source data would trigger geokit UserWarning every time
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
+
+                points = [(loc.lon, loc.lat) for loc in self.locs._locations]
+
                 _lra = gk.raster.interpolateValues(
-                    fp, self.locs, mode=spatial_interpolation
+                    fp, points, mode=spatial_interpolation
                 )
                 # if getting values fails, it could be because of interpolation method.
                 # these values will be replaced with the nearest interpolation method
@@ -358,8 +361,9 @@ class WorkflowManager:
                     def _nanmedian(vals, xOff, yOff):
                         return np.nanmedian(vals)
 
+                    points = [(loc.lon, loc.lat) for loc in self.locs._locations]
                     _lra_near = gk.raster.interpolateValues(
-                        fp, self.locs, mode="func", func=_nanmedian
+                        fp, points, mode="func", func=_nanmedian
                     )
                     _lra[np.isnan(_lra)] = _lra_near[np.isnan(_lra)]
             return _lra
@@ -474,9 +478,10 @@ class WorkflowManager:
         """
         # Get values from high resolution tiff file
         if isinstance(source_high_resolution, str):
+            points = [(loc.lon, loc.lat) for loc in self.locs._locations]
             correction_values_high_res = (
                 gk.raster.interpolateValues(  # TODO change here
-                    source_high_resolution, self.locs, mode=spatial_interpolation
+                    source_high_resolution, points, mode=spatial_interpolation
                 )
             )
             # assert not np.isnan(correction_values_high_res).any() and (correction_values_high_res > 0).all()
@@ -485,8 +490,9 @@ class WorkflowManager:
 
         # Get values from low resolution tiff file (meaned over eg. ERA5)
         if isinstance(source_low_resolution, str):
+            points = [(loc.lon, loc.lat) for loc in self.locs._locations]
             correction_values_low_res = gk.raster.interpolateValues(  # TODO change here
-                source_low_resolution, self.locs, mode=spatial_interpolation
+                source_low_resolution, points, mode=spatial_interpolation
             )
             # assert not np.isnan(correction_values_low_res).any() and (correction_values_low_res > 0).all()
         else:
@@ -779,7 +785,13 @@ def _split_locs(placements, groups):
     else:
         locs = gk.LocationSet(placements.index)
         for loc_group in locs.splitKMeans(groups=groups):
-            yield placements.loc[loc_group[:]]
+            # splitKMeans() returns a LocationSet with coordinates very close to placements.index,
+            # but not guaranteed to be exact due to floating-point precision.
+            # Therefore, its rounded to 15 decimal to ensure an exact match for use in .loc[].
+            rounded_keys = [
+                (round(loc.lon, 15), round(loc.lat, 15)) for loc in loc_group[:]
+            ]
+            yield placements.loc[rounded_keys]
 
 
 def distribute_workflow(
@@ -854,8 +866,12 @@ def distribute_workflow(
         locs = gk.LocationSet(
             np.column_stack([placements.lon.values, placements.lat.values])
         )
-
-    placements.index = locs
+    # placements.index is used in the _split_locs function, where exact key matching is required.
+    # Therefore, the coordinates are rounded to 15 decimal places to ensure consistency with the
+    # LocationSet keys returned by splitKMeans().
+    placements.index = [
+        (round(loc.lon, 15), round(loc.lat, 15)) for loc in locs._locations
+    ]
     placements["location_id"] = np.arange(placements.shape[0])
 
     if max_batch_size is None:
