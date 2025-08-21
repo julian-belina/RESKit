@@ -1,6 +1,6 @@
 information, documented by s.chen@fz-juelich.de on 2025-07-24
 
-To download necessary variables of ERA5 data for running RESKit model
+**To download necessary variables of ERA5 data for running RESKit model**
 
 # ERA5 data set information page
 Please check the general information of ERA5 data so to have a basic idea about this data:

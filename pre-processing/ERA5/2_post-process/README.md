@@ -1,6 +1,6 @@
 information, documented by s.chen@fz-juelich.de on 2025-07-24
 
-To explain why we need to post-process the downloaded ERA5 data in order to run the RESKit model
+**To explain why we need to post-process the downloaded ERA5 data in order to run the RESKit model**
 
 # extract every individual variables from the downloaded bulk
 It is optional in the sense of running RESKit model. We perform it for the sake of easy management.
