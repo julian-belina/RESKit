@@ -19,13 +19,13 @@ jobs:
             matrix:
                 # https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
                 # Min
-                # os: ["ubuntu-24.04"]
+                os: ["ubuntu-24.04"]
                 # Proper
                 # os: ["ubuntu-22.04", "macos-13","windows-2025","windows-2022","macos-14"]
                 # os: ["ubuntu-24.04","ubuntu-22.04", "macos-13","windows-2025","windows-2022"]                
-                os: ["macos-15"]
+                # os: ["macos-15"]
                 # Proper Gdal Versions
-                python_version: ["3.5","3.6","3.7","3.8","3.9","3.10"]
+                python_version: ["3.3","3.4","3.5","3.6","3.7","3.8","3.9","3.10"]
                 # Failing Versions 
                 # python_version: ["2.4.3","2.4.4","3.3.2","3.3.3",]
         steps:
