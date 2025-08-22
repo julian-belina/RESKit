@@ -15,7 +15,7 @@ dependencies:
   - matplotlib
   - descartes
   - pandas
-  - numpy
+  - numpy <=1.23.5
   - scipy
   - scikit-learn
   - gdal>2.2.0,<3.0.0
