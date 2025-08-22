@@ -46,7 +46,7 @@ jobs:
                 method: CreateOrUpdate
                 changes: |
                   {
-                  "dependencies[13]": "python =${{ matrix.python_version }}"
+                  "dependencies[0]": "python =${{ matrix.python_version }}"
                   }
             - name: Install libraries
               shell: pwsh
