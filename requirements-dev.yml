@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - pvlib
 dependencies:
-  - python
+  - python >=3.6,<=3.8
   - pytest
   - pytest-cov
   - pylint
