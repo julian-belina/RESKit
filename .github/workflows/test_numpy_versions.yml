@@ -4,9 +4,9 @@ on:
     inputs:
       tags:
         description: 'Manual run' 
-  push:
-    branches: 
-      - "version/0.4.2"
+  # push:
+  #   branches: 
+  #     - "version/0.4.2"
 
 #   Allows to trigger the workflow manually
     
