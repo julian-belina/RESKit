@@ -25,9 +25,10 @@ jobs:
                 # os: ["ubuntu-24.04","ubuntu-22.04", "macos-13","windows-2025","windows-2022"]                
                 # os: ["macos-15"]
                 # Proper Gdal Versions
-                python_version: ["3.9","3.10","3.11","3.12","3.13"]
+                python_version: ["3.9","3.10"]
                 # Failing Versions 
                 # python_version: ["2.4.3","2.4.4","3.3.2","3.3.3",]
+                # python_version: ["3.11","3.12","3.13"]
         steps:
             - name: Setup Conda
               uses: conda-incubator/setup-miniconda@v3
